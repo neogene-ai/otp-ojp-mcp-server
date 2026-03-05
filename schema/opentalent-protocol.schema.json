@@ -1,0 +1,618 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opentalentprotocol.org/schema/v0.1/opentalent-protocol.schema.json",
+  "title": "Open Talent Protocol",
+  "description": "An open, machine-first standard for representing a person's professional profile in agentic talent marketplaces. v0.1.",
+  "type": "object",
+  "required": ["meta", "identity"],
+
+  "$defs": {
+
+    "isoDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Calendar date in ISO 8601 format (YYYY-MM-DD)."
+    },
+
+    "isoDatetime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date-time in ISO 8601 / RFC 3339 format."
+    },
+
+    "uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "Absolute URI."
+    },
+
+    "countryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166-1 alpha-2 country code (e.g. 'DE', 'US', 'FR')."
+    },
+
+    "languageTag": {
+      "type": "string",
+      "description": "BCP 47 language tag (e.g. 'en', 'de', 'pt-BR')."
+    },
+
+    "verificationObject": {
+      "type": "object",
+      "description": "Provenance and verification record attached to an individual data item.",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["self", "test", "issuer", "platform"],
+          "description": "How this item was verified. 'self' = self-reported, 'test' = passed an assessment, 'issuer' = confirmed by the credential issuer, 'platform' = verified by the hosting platform."
+        },
+        "issuerName": {
+          "type": "string",
+          "description": "Name of the entity that performed or attests to the verification."
+        },
+        "issuerType": {
+          "type": "string",
+          "enum": ["company", "school", "cert-provider", "platform", "other"],
+          "description": "Category of the verifying entity."
+        },
+        "issuedAt": { "$ref": "#/$defs/isoDate" },
+        "url": {
+          "$ref": "#/$defs/uri",
+          "description": "Link to the verification artifact or badge."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "visibilityLevel": {
+      "type": "string",
+      "enum": ["public", "recruiters", "private"],
+      "description": "Audience allowed to see this data. 'public' = anyone, 'recruiters' = authenticated recruiters/employers, 'private' = owner only."
+    }
+
+  },
+
+  "properties": {
+
+    "meta": {
+      "type": "object",
+      "description": "Document-level metadata.",
+      "required": ["schemaVersion"],
+      "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.1",
+          "description": "Version of the Open Talent Protocol schema this document conforms to."
+        },
+        "language": {
+          "$ref": "#/$defs/languageTag",
+          "default": "en",
+          "description": "Primary natural language of the document content."
+        },
+        "lastUpdated": {
+          "$ref": "#/$defs/isoDatetime",
+          "description": "When this document was last modified."
+        },
+        "source": {
+          "type": "string",
+          "description": "System or actor that last wrote this document (e.g. 'user', 'jobgrow', 'import:jsonresume', 'agent')."
+        },
+        "dataController": {
+          "type": "string",
+          "description": "The legal data controller responsible for this document — the entity that determines the purposes and means of processing the personal data it contains. May be an individual (the subject themselves), an employer, or a platform. Can be a name, a URI, or a platform-specific identifier. Relevant for GDPR Article 4(7) compliance and similar data protection frameworks."
+        },
+        "subjectId": {
+          "type": "string",
+          "description": "A stable identifier for the human subject of this document. This is NOT necessarily an email address; it may be a platform-assigned ID, a DID (Decentralized Identifier), or any other persistent, portable identifier the subject controls. Intended to enable de-duplication, agent ownership, and future verifiable credential binding without prescribing an identity regime."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "identity": {
+      "type": "object",
+      "description": "Core personal and contact information.",
+      "required": ["fullName"],
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "Legal full name."
+        },
+        "preferredName": {
+          "type": "string",
+          "description": "Name the person prefers to be called (first name or nickname)."
+        },
+        "pronouns": {
+          "type": "string",
+          "description": "Preferred pronouns (e.g. 'she/her', 'they/them'). Free-form."
+        },
+        "contact": {
+          "type": "object",
+          "description": "Contact details.",
+          "properties": {
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "Primary email address."
+            },
+            "phone": {
+              "type": "string",
+              "description": "Phone number in E.164 or local format."
+            },
+            "location": {
+              "type": "object",
+              "description": "Geographic location, used for matching and display.",
+              "properties": {
+                "city": { "type": "string" },
+                "region": { "type": "string", "description": "State, Bundesland, canton, etc." },
+                "country": { "$ref": "#/$defs/countryCode" },
+                "postalCode": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "timezone": {
+              "type": "string",
+              "description": "IANA timezone identifier (e.g. 'Europe/Berlin')."
+            }
+          },
+          "additionalProperties": false
+        },
+        "profiles": {
+          "type": "array",
+          "description": "Public online profiles (GitHub, LinkedIn, personal site, etc.).",
+          "items": {
+            "type": "object",
+            "required": ["network", "url"],
+            "properties": {
+              "network": {
+                "type": "string",
+                "description": "Platform name (e.g. 'github', 'linkedin', 'personal')."
+              },
+              "url": { "$ref": "#/$defs/uri" },
+              "username": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "workAuthorization": {
+          "type": "object",
+          "description": "Work authorization status across jurisdictions.",
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "Free-form description (e.g. 'EU citizen, no sponsorship required')."
+            },
+            "authorizedCountries": {
+              "type": "array",
+              "description": "Countries where the person is currently authorized to work.",
+              "items": { "$ref": "#/$defs/countryCode" }
+            },
+            "requiresSponsorship": {
+              "type": "boolean",
+              "description": "Whether the person requires visa sponsorship to work in countries not listed above."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "summary": {
+      "type": "string",
+      "description": "A short professional summary or elevator pitch written in first or third person. Plain text only; no markup."
+    },
+
+    "work": {
+      "type": "array",
+      "description": "Chronological work history, most recent first.",
+      "items": {
+        "type": "object",
+        "required": ["organization", "role", "startDate"],
+        "properties": {
+          "organization": {
+            "type": "string",
+            "description": "Employer or client organization name."
+          },
+          "organizationUrl": { "$ref": "#/$defs/uri" },
+          "role": {
+            "type": "string",
+            "description": "Job title or role name."
+          },
+          "startDate": { "$ref": "#/$defs/isoDate" },
+          "endDate": { "$ref": "#/$defs/isoDate" },
+          "current": {
+            "type": "boolean",
+            "description": "Set to true if this is the current position. If true, endDate should be omitted."
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "city": { "type": "string" },
+              "country": { "$ref": "#/$defs/countryCode" },
+              "remote": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          },
+          "employmentType": {
+            "type": "string",
+            "enum": ["full-time", "part-time", "contract", "freelance", "internship", "volunteer", "other"],
+            "description": "Nature of the employment relationship."
+          },
+          "highlights": {
+            "type": "array",
+            "description": "Bullet-point accomplishments and responsibilities. Plain text.",
+            "items": { "type": "string" }
+          },
+          "impact": {
+            "type": "array",
+            "description": "Quantified impact statements for agent-driven ranking and comparison.",
+            "items": {
+              "type": "object",
+              "required": ["metric", "value"],
+              "properties": {
+                "metric": {
+                  "type": "string",
+                  "description": "Name of the metric (e.g. 'revenue growth', 'team size', 'uptime improvement')."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The measured value as a human-readable string (e.g. '+35%', '€2M ARR', '12 engineers')."
+                },
+                "period": {
+                  "type": "string",
+                  "description": "Time period over which the metric was achieved (e.g. 'FY2023', '18 months')."
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "tags": {
+            "type": "array",
+            "description": "Free-form domain or technology tags to aid search and matching.",
+            "items": { "type": "string" }
+          },
+          "verification": { "$ref": "#/$defs/verificationObject" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "education": {
+      "type": "array",
+      "description": "Formal education history.",
+      "items": {
+        "type": "object",
+        "required": ["institution", "degree"],
+        "properties": {
+          "institution": { "type": "string" },
+          "institutionUrl": { "$ref": "#/$defs/uri" },
+          "degree": {
+            "type": "string",
+            "description": "Degree type (e.g. 'Bachelor of Science', 'Master of Arts', 'Ausbildung')."
+          },
+          "field": {
+            "type": "string",
+            "description": "Field or major of study."
+          },
+          "startDate": { "$ref": "#/$defs/isoDate" },
+          "endDate": { "$ref": "#/$defs/isoDate" },
+          "current": { "type": "boolean" },
+          "grade": {
+            "type": "string",
+            "description": "Final grade or GPA in the institution's own notation."
+          },
+          "highlights": {
+            "type": "array",
+            "description": "Notable achievements, thesis title, clubs, etc.",
+            "items": { "type": "string" }
+          },
+          "verification": { "$ref": "#/$defs/verificationObject" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "skills": {
+      "type": "array",
+      "description": "Normalized skill inventory. Intended to be machine-readable and matchable across profiles.",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Canonical skill name (e.g. 'TypeScript', 'Product Roadmapping', 'Venipuncture')."
+          },
+          "level": {
+            "type": "string",
+            "enum": ["beginner", "intermediate", "advanced", "expert"],
+            "description": "Self-assessed proficiency level."
+          },
+          "category": {
+            "type": "string",
+            "description": "Skill category for grouping (e.g. 'programming language', 'framework', 'soft skill', 'clinical')."
+          },
+          "lastUsed": {
+            "$ref": "#/$defs/isoDate",
+            "description": "Date when this skill was last actively used."
+          },
+          "yearsOfExperience": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Approximate years of practical experience with this skill."
+          },
+          "verification": { "$ref": "#/$defs/verificationObject" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "projects": {
+      "type": "array",
+      "description": "Selected personal, open-source, or professional projects that demonstrate skills.",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": {
+            "type": "string",
+            "description": "What the project does and why it matters. Plain text."
+          },
+          "role": {
+            "type": "string",
+            "description": "The person's role in the project (e.g. 'Lead Developer', 'Contributor')."
+          },
+          "startDate": { "$ref": "#/$defs/isoDate" },
+          "endDate": { "$ref": "#/$defs/isoDate" },
+          "current": { "type": "boolean" },
+          "technologies": {
+            "type": "array",
+            "description": "Technologies or tools used.",
+            "items": { "type": "string" }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["label", "url"],
+              "properties": {
+                "label": { "type": "string", "description": "e.g. 'GitHub', 'Live Demo', 'Paper'" },
+                "url": { "$ref": "#/$defs/uri" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "credentials": {
+      "type": "array",
+      "description": "Degrees, professional certifications, and regulated licenses.",
+      "items": {
+        "type": "object",
+        "required": ["name", "issuer"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Credential name (e.g. 'AWS Certified Solutions Architect', 'RN License')."
+          },
+          "issuer": {
+            "type": "string",
+            "description": "Issuing organization."
+          },
+          "issuerUrl": { "$ref": "#/$defs/uri" },
+          "issueDate": { "$ref": "#/$defs/isoDate" },
+          "expiryDate": { "$ref": "#/$defs/isoDate" },
+          "credentialId": {
+            "type": "string",
+            "description": "Certificate or license ID number, if publicly verifiable."
+          },
+          "url": {
+            "$ref": "#/$defs/uri",
+            "description": "Link to the credential record or badge."
+          },
+          "verification": { "$ref": "#/$defs/verificationObject" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "languages": {
+      "type": "array",
+      "description": "Human language proficiencies.",
+      "items": {
+        "type": "object",
+        "required": ["code", "name"],
+        "properties": {
+          "code": {
+            "$ref": "#/$defs/languageTag",
+            "description": "BCP 47 language tag (e.g. 'en', 'de', 'fr')."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable language name (e.g. 'English', 'German')."
+          },
+          "level": {
+            "type": "string",
+            "enum": ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
+            "description": "Proficiency level using CEFR scale, or 'native'."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "preferences": {
+      "type": "object",
+      "description": "Candidate's job search preferences. This section is first-class because it is the primary input for agentic matching — agents read this to determine fit before comparing work history.",
+      "properties": {
+        "desiredRoles": {
+          "type": "array",
+          "description": "Job titles or role types the candidate is actively seeking.",
+          "items": { "type": "string" }
+        },
+        "industries": {
+          "type": "array",
+          "description": "Industries or verticals of interest. Optional.",
+          "items": { "type": "string" }
+        },
+        "locations": {
+          "type": "array",
+          "description": "Preferred cities, regions, or countries. Use country codes or plain city names.",
+          "items": { "type": "string" }
+        },
+        "workModes": {
+          "type": "array",
+          "description": "Acceptable work arrangements.",
+          "items": {
+            "type": "string",
+            "enum": ["remote", "hybrid", "onsite"]
+          }
+        },
+        "salary": {
+          "type": "object",
+          "description": "Desired compensation.",
+          "properties": {
+            "min": { "type": "number", "description": "Minimum acceptable salary." },
+            "max": { "type": "number", "description": "Target or maximum salary." },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$",
+              "description": "ISO 4217 currency code (e.g. 'EUR', 'USD')."
+            },
+            "period": {
+              "type": "string",
+              "enum": ["annual", "monthly", "daily", "hourly"],
+              "description": "Pay period for the stated amounts."
+            },
+            "negotiable": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "workHours": {
+          "type": "array",
+          "description": "Acceptable engagement types.",
+          "items": {
+            "type": "string",
+            "enum": ["full-time", "part-time", "contract", "freelance"]
+          }
+        },
+        "constraints": {
+          "type": "object",
+          "description": "Non-negotiable conditions and preferences that agents must respect.",
+          "properties": {
+            "noticePeriod": {
+              "type": "string",
+              "description": "Current notice period or availability (e.g. '4 weeks', 'immediately')."
+            },
+            "availableFrom": { "$ref": "#/$defs/isoDate" },
+            "travelWillingness": {
+              "type": "string",
+              "enum": ["none", "occasional", "frequent"],
+              "description": "Willingness to travel for the role."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Free-form notes on non-negotiables (e.g. 'no on-call rotations', 'school hours only')."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "evidence": {
+      "type": "array",
+      "description": "Reusable portfolio artifacts and proof-of-work items that support claims made elsewhere in the document.",
+      "items": {
+        "type": "object",
+        "required": ["type", "title", "url"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["code", "article", "portfolio", "test-result", "publication", "talk", "other"],
+            "description": "Category of the evidence artifact."
+          },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "url": { "$ref": "#/$defs/uri" },
+          "relatedSkills": {
+            "type": "array",
+            "description": "Names of skills (from the 'skills' array) that this artifact demonstrates.",
+            "items": { "type": "string" }
+          },
+          "issuer": {
+            "type": "string",
+            "description": "Platform or organization that hosts or issued this artifact (e.g. 'GitHub', 'Medium', 'Codility')."
+          },
+          "verification": { "$ref": "#/$defs/verificationObject" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "verification": {
+      "type": "object",
+      "description": "Document-level provenance and integrity metadata.",
+      "properties": {
+        "createdBy": {
+          "type": "string",
+          "enum": ["user", "platform", "agent", "import"],
+          "description": "Who or what originally created this document."
+        },
+        "createdAt": { "$ref": "#/$defs/isoDatetime" },
+        "updatedBy": {
+          "type": "string",
+          "description": "Actor that last updated the document (e.g. 'user', 'agent:jobgrow-v2', 'import:jsonresume')."
+        },
+        "integrity": {
+          "type": "string",
+          "description": "Content hash of the document (excluding this field) for tamper detection. Format: '<algorithm>:<hex-digest>' (e.g. 'sha256:abc123...'). v0.1 treats this as informational only."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "visibility": {
+      "type": "object",
+      "description": "Privacy controls governing who can read sections or items in this document.",
+      "properties": {
+        "defaultVisibility": {
+          "$ref": "#/$defs/visibilityLevel",
+          "description": "Baseline visibility for the entire document. Overrides apply on top of this."
+        },
+        "overrides": {
+          "type": "array",
+          "description": "Per-section or per-item visibility overrides. Each entry maps a JSON Pointer path to a visibility level.",
+          "items": {
+            "type": "object",
+            "required": ["path", "visibility"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "JSON Pointer (RFC 6901) to the field or array item being overridden (e.g. '/identity/contact/phone', '/work/0/impact')."
+              },
+              "visibility": { "$ref": "#/$defs/visibilityLevel" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "custom": {
+      "type": "object",
+      "description": "Extension namespace for domain-specific or proprietary fields. Implementors should namespace their keys (e.g. 'jobgrow:*', 'myapp:*') to avoid collisions. The schema places no constraints on this object's contents.",
+      "additionalProperties": true
+    }
+
+  },
+
+  "additionalProperties": false
+}

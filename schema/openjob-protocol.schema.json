@@ -1,0 +1,521 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opentalentprotocol.org/schema/v0.1/openjob-protocol.schema.json",
+  "title": "Open Job Protocol",
+  "description": "An open, machine-first standard for representing a job posting in agentic talent marketplaces. v0.1.",
+  "type": "object",
+  "required": ["meta", "role", "organization"],
+
+  "$defs": {
+
+    "isoDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Calendar date in ISO 8601 format (YYYY-MM-DD)."
+    },
+
+    "isoDatetime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date-time in ISO 8601 / RFC 3339 format."
+    },
+
+    "uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "Absolute URI."
+    },
+
+    "countryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166-1 alpha-2 country code (e.g. 'DE', 'US', 'FR')."
+    },
+
+    "languageTag": {
+      "type": "string",
+      "description": "BCP 47 language tag (e.g. 'en', 'de', 'pt-BR')."
+    }
+
+  },
+
+  "properties": {
+
+    "meta": {
+      "type": "object",
+      "description": "Document-level metadata.",
+      "required": ["version", "job_id", "status", "created_at", "updated_at", "locale"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "const": "0.1",
+          "description": "Version of the Open Job Protocol schema this document conforms to."
+        },
+        "job_id": {
+          "type": "string",
+          "description": "Stable identifier for this job posting."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["DRAFT", "ACTIVE", "PAUSED", "CLOSED", "EXPIRED", "FILLED"],
+          "description": "Current lifecycle status of the job posting."
+        },
+        "created_at": { "$ref": "#/$defs/isoDatetime" },
+        "updated_at": { "$ref": "#/$defs/isoDatetime" },
+        "valid_through": { "$ref": "#/$defs/isoDate" },
+        "source": {
+          "type": "string",
+          "description": "System or actor that produced this document (e.g. 'ats', 'agent', 'manual')."
+        },
+        "source_url": { "$ref": "#/$defs/uri" },
+        "locale": {
+          "$ref": "#/$defs/languageTag",
+          "description": "Primary language of the document content."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "role": {
+      "type": "object",
+      "description": "The open role details.",
+      "required": ["title", "description", "employment_type"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Job title (e.g. 'Senior Backend Engineer')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Full role description. Plain text."
+        },
+        "employment_type": {
+          "type": "string",
+          "enum": ["full_time", "part_time", "contract", "freelance", "internship", "temporary"],
+          "description": "Nature of the employment relationship."
+        },
+        "role_summary": {
+          "type": "string",
+          "description": "One-paragraph executive summary of the role for agent reasoning."
+        },
+        "function": {
+          "type": "string",
+          "description": "Organizational function (e.g. 'Engineering', 'Product', 'Sales')."
+        },
+        "seniority": {
+          "type": "string",
+          "enum": ["intern", "junior", "mid", "senior", "staff", "principal", "lead", "director", "vp", "c_level"],
+          "description": "Seniority level of the role."
+        },
+        "total_openings": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of open positions."
+        },
+        "responsibilities": {
+          "type": "array",
+          "description": "Bullet-point list of key responsibilities.",
+          "items": { "type": "string" }
+        },
+        "work_hours": {
+          "type": "string",
+          "description": "Expected hours and schedule (e.g. '40h/week, flexible core hours 10:00–16:00 CET')."
+        },
+        "job_start_date": {
+          "$ref": "#/$defs/isoDate",
+          "description": "Expected start date for the role."
+        },
+        "immediate_start": {
+          "type": "boolean",
+          "description": "Whether an immediate start is required."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "organization": {
+      "type": "object",
+      "description": "The hiring organization.",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Organization name."
+        },
+        "url": { "$ref": "#/$defs/uri" },
+        "logo_url": { "$ref": "#/$defs/uri" },
+        "industry": {
+          "type": "string",
+          "description": "Industry or vertical (e.g. 'B2B SaaS', 'Healthtech', 'Fintech')."
+        },
+        "size": {
+          "type": "string",
+          "enum": ["startup", "scale_up", "mid_market", "enterprise"],
+          "description": "Approximate company size bracket."
+        },
+        "department": {
+          "type": "string",
+          "description": "Department or team within the organization."
+        },
+        "founded": {
+          "type": "integer",
+          "description": "Year the organization was founded."
+        },
+        "headquarters": {
+          "type": "string",
+          "description": "HQ location (e.g. 'Berlin, DE')."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "requirements": {
+      "type": "object",
+      "description": "Candidate requirements split into must-have and nice-to-have.",
+      "properties": {
+        "must_have": {
+          "type": "object",
+          "description": "Hard requirements — candidates must meet all of these.",
+          "properties": {
+            "skills": {
+              "type": "array",
+              "description": "Required skills. skill name is directly comparable to OTP skills[].name.",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Canonical skill name (e.g. 'TypeScript', 'Kubernetes')."
+                  },
+                  "min_years": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Minimum years of experience required."
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "experience_years": {
+              "type": "object",
+              "description": "Total professional experience requirement.",
+              "properties": {
+                "min": { "type": "number", "minimum": 0 },
+                "max": { "type": "number", "minimum": 0 }
+              },
+              "additionalProperties": false
+            },
+            "credentials": {
+              "type": "array",
+              "description": "Required degrees or qualifications (e.g. 'Bachelor in Computer Science').",
+              "items": { "type": "string" }
+            },
+            "certifications": {
+              "type": "array",
+              "description": "Required certifications (e.g. 'AWS Certified Solutions Architect').",
+              "items": { "type": "string" }
+            },
+            "languages": {
+              "type": "array",
+              "description": "Required language proficiencies.",
+              "items": {
+                "type": "object",
+                "required": ["code", "level"],
+                "properties": {
+                  "code": { "$ref": "#/$defs/languageTag" },
+                  "level": {
+                    "type": "string",
+                    "enum": ["A1", "A2", "B1", "B2", "C1", "C2", "native"]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "legal": {
+              "type": "object",
+              "description": "Legal or compliance requirements.",
+              "properties": {
+                "work_authorization": {
+                  "type": "string",
+                  "description": "Work authorization requirements (e.g. 'EU work permit required')."
+                },
+                "security_clearance": {
+                  "type": "string",
+                  "description": "Security clearance requirements if any."
+                },
+                "physical_requirements": {
+                  "type": "string",
+                  "description": "Physical requirements if applicable."
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "nice_to_have": {
+          "type": "object",
+          "description": "Preferred qualifications — helpful but not required.",
+          "properties": {
+            "skills": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "min_years": { "type": "number", "minimum": 0 }
+                },
+                "additionalProperties": false
+              }
+            },
+            "experience_years": {
+              "type": "object",
+              "properties": {
+                "min": { "type": "number", "minimum": 0 },
+                "max": { "type": "number", "minimum": 0 }
+              },
+              "additionalProperties": false
+            },
+            "credentials": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "certifications": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["code", "level"],
+                "properties": {
+                  "code": { "$ref": "#/$defs/languageTag" },
+                  "level": {
+                    "type": "string",
+                    "enum": ["A1", "A2", "B1", "B2", "C1", "C2", "native"]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "legal": {
+              "type": "object",
+              "properties": {
+                "work_authorization": { "type": "string" },
+                "security_clearance": { "type": "string" },
+                "physical_requirements": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "experience_in_place_of_education": {
+              "type": "boolean",
+              "description": "Whether equivalent experience is accepted in lieu of formal education."
+            },
+            "preferred_qualifications": {
+              "type": "array",
+              "description": "Free-form list of preferred qualifications.",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "offering": {
+      "type": "object",
+      "description": "What the employer offers: compensation, location, benefits, and growth.",
+      "properties": {
+        "compensation": {
+          "type": "object",
+          "properties": {
+            "salary": {
+              "type": "object",
+              "description": "Salary range. Uses the same {min, max, currency, period} structure as OTP preferences.salary.",
+              "properties": {
+                "min": { "type": "number", "description": "Minimum salary." },
+                "max": { "type": "number", "description": "Maximum salary." },
+                "currency": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$",
+                  "description": "ISO 4217 currency code (e.g. 'EUR', 'USD')."
+                },
+                "period": {
+                  "type": "string",
+                  "enum": ["annual", "monthly", "daily", "hourly"]
+                }
+              },
+              "additionalProperties": false
+            },
+            "additional_compensation": {
+              "type": "array",
+              "description": "Additional compensation components (e.g. 'Annual bonus up to 15%', 'VSOP equity').",
+              "items": { "type": "string" }
+            },
+            "transparency": {
+              "type": "string",
+              "enum": ["public", "on_request", "after_interview"],
+              "description": "When salary information is disclosed to candidates."
+            }
+          },
+          "additionalProperties": false
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "arrangement": {
+              "type": "string",
+              "enum": ["remote", "hybrid", "onsite"],
+              "description": "Work arrangement. Matches OTP preferences.workModes values."
+            },
+            "primary_location": {
+              "type": "string",
+              "description": "Primary office location (e.g. 'Berlin, DE')."
+            },
+            "alternate_locations": {
+              "type": "array",
+              "description": "Additional accepted office locations.",
+              "items": { "type": "string" }
+            },
+            "remote_regions": {
+              "type": "array",
+              "description": "Accepted regions for remote work (e.g. 'Europe', 'UTC-5 to UTC+2').",
+              "items": { "type": "string" }
+            },
+            "relocation_support": {
+              "type": "boolean",
+              "description": "Whether relocation assistance is provided."
+            },
+            "visa_sponsorship": {
+              "type": "boolean",
+              "description": "Whether visa sponsorship is available."
+            }
+          },
+          "additionalProperties": false
+        },
+        "benefits": {
+          "type": "object",
+          "properties": {
+            "benefits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["category", "description"],
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": ["health", "retirement", "development", "flexibility", "family", "financial", "other"]
+                  },
+                  "description": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "growth": {
+          "type": "object",
+          "description": "Career growth and development opportunities.",
+          "properties": {
+            "career_path": { "type": "string" },
+            "mentorship": { "type": "string" },
+            "promotion_cadence": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "team": {
+      "type": "object",
+      "description": "Team context for the role.",
+      "properties": {
+        "name": { "type": "string" },
+        "size": { "type": "integer", "minimum": 1 },
+        "reports_to": { "type": "string" },
+        "tech_stack": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "methodology": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "process": {
+      "type": "object",
+      "description": "Hiring process details.",
+      "properties": {
+        "stages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "duration_minutes": { "type": "integer", "minimum": 0 },
+              "type": {
+                "type": "string",
+                "enum": ["screening", "technical", "behavioral", "case_study", "take_home", "offer", "other"]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "total_duration_days": { "type": "integer", "minimum": 0 },
+        "decision_timeline": { "type": "string" },
+        "application_url": { "$ref": "#/$defs/uri" },
+        "direct_apply": { "type": "boolean" },
+        "accepts_otp_profile": {
+          "type": "boolean",
+          "description": "Whether the employer accepts Open Talent Protocol profile submissions."
+        },
+        "ai_screening": {
+          "type": "boolean",
+          "description": "Whether AI screening is used at any stage."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "culture": {
+      "type": "object",
+      "description": "Employer culture and values.",
+      "properties": {
+        "values": { "type": "array", "items": { "type": "string" } },
+        "work_style": { "type": "array", "items": { "type": "string" } },
+        "special_commitments": { "type": "array", "items": { "type": "string" } },
+        "dei_statement_url": { "$ref": "#/$defs/uri" },
+        "eeo_statement": { "type": "string" },
+        "diversity_statement": { "type": "string" },
+        "employer_overview": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "visibility": {
+      "type": "object",
+      "description": "Controls which sections are visible to candidates.",
+      "properties": {
+        "salary": {
+          "type": "string",
+          "enum": ["public", "on_request", "after_interview"]
+        },
+        "team_details": { "type": "boolean" },
+        "process_stages": { "type": "boolean" },
+        "hiring_manager": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+
+  },
+
+  "additionalProperties": false
+}
